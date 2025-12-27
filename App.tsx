@@ -19,7 +19,6 @@ const App: React.FC = () => {
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState<VoiceName>('Zephyr');
   
-  // Audio context and refs
   const inputAudioContextRef = useRef<AudioContext | null>(null);
   const outputAudioContextRef = useRef<AudioContext | null>(null);
   const nextStartTimeRef = useRef<number>(0);
@@ -27,7 +26,6 @@ const App: React.FC = () => {
   const sessionRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
   
-  // Transcription accumulators
   const currentInputTransRef = useRef('');
   const currentOutputTransRef = useRef('');
 
@@ -54,6 +52,7 @@ const App: React.FC = () => {
     try {
       setStatus(ConnectionStatus.CONNECTING);
       
+      // Instantiate right before connection
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
       
       inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
@@ -115,7 +114,7 @@ const App: React.FC = () => {
               currentOutputTransRef.current = '';
             }
 
-            const base64Audio = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
+            const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (base64Audio) {
               setIsGeminiSpeaking(true);
               const outCtx = outputAudioContextRef.current!;
@@ -144,7 +143,7 @@ const App: React.FC = () => {
             }
           },
           onerror: (e) => {
-            console.error(e);
+            console.error('Live API Error:', e);
             setStatus(ConnectionStatus.ERROR);
             stopConversation();
           },
@@ -163,7 +162,7 @@ const App: React.FC = () => {
 
       sessionRef.current = await sessionPromise;
     } catch (error) {
-      console.error(error);
+      console.error('Connection Failed:', error);
       setStatus(ConnectionStatus.ERROR);
     }
   };
@@ -176,7 +175,6 @@ const App: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 h-screen flex flex-col gap-6">
-      {/* Header & Global Status */}
       <header className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
@@ -213,7 +211,6 @@ const App: React.FC = () => {
         </nav>
       </header>
 
-      {/* Dynamic Content */}
       <main className="flex-1 min-h-0">
         {activeTab === 'voice' && (
           <div className="flex flex-col h-full gap-6">

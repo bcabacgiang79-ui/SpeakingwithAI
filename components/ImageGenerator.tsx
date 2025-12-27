@@ -13,16 +13,18 @@ export const ImageGenerator: React.FC = () => {
     if (!prompt.trim() || isGenerating) return;
 
     try {
+      // Key selection is mandatory for gemini-3-pro-image-preview
       // @ts-ignore
       const hasKey = await window.aistudio.hasSelectedApiKey();
       if (!hasKey) {
         // @ts-ignore
         await window.aistudio.openSelectKey();
-        // Billing info link is in dialog usually, but for compliance: 
-        // Documentation: ai.google.dev/gemini-api/docs/billing
+        // Proceeding immediately as per guidelines to avoid race condition
       }
 
       setIsGenerating(true);
+      
+      // Instantiate at call-site
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
       
       const response = await ai.models.generateContent({
@@ -37,24 +39,27 @@ export const ImageGenerator: React.FC = () => {
       });
 
       let foundImage = false;
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) {
-          const imageUrl = `data:image/png;base64,${part.inlineData.data}`;
-          setImages(prev => [{ url: imageUrl, prompt, timestamp: Date.now() }, ...prev]);
-          foundImage = true;
-          break;
+      const candidate = response.candidates?.[0];
+      if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+          if (part.inlineData) {
+            const imageUrl = `data:image/png;base64,${part.inlineData.data}`;
+            setImages(prev => [{ url: imageUrl, prompt, timestamp: Date.now() }, ...prev]);
+            foundImage = true;
+            break;
+          }
         }
       }
 
-      if (!foundImage) alert("No image was returned. Check your prompt.");
+      if (!foundImage) alert("No image was returned. " + (response.text || "Reason unknown."));
       setPrompt('');
     } catch (err: any) {
-      console.error(err);
+      console.error('Generation error:', err);
       if (err.message?.includes("Requested entity was not found")) {
         // @ts-ignore
         await window.aistudio.openSelectKey();
       } else {
-        alert("Failed to generate image. Please check your billing/API key.");
+        alert(`Failed to generate image: ${err.message || 'Internal error'}`);
       }
     } finally {
       setIsGenerating(false);
