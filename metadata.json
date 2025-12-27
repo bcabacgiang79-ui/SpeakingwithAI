@@ -1,0 +1,7 @@
+{
+  "name": "Gemini Multiverse",
+  "description": "Integrated AI suite featuring Gemini 2.5 Live Voice Navigation, Gemini 3 Pro Chat, Pro Image Generation (1K-4K), and AI Image Editing.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
